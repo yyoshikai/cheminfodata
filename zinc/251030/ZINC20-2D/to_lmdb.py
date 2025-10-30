@@ -17,8 +17,8 @@ add_file_handler(logger, "raw/to_lmdb.log")
 logger.info(f"{rdkit.__version__=}")
 logger.info(f"{args.test=}")
 
-env_smi, txn_smi = new_lmdb("smi.lmdb")
-env_id, txn_id = new_lmdb("id.lmdb")
+env_smi, txn_smi = new_lmdb("smi.lmdb", map_size=int(100e10))
+env_id, txn_id = new_lmdb("id.lmdb", map_size=int(100e10))
 size = 100000 if args.test else 1_940_000_000 # from website
 blen = data_len_to_blen(size)
 idx = 0
@@ -31,7 +31,7 @@ for path in sorted(glob("raw/ZINC20-2D/*/*.smi")):
                 smi, id = line[:-1].split(' ')
                 key = idx.to_bytes(blen)
                 txn_smi.put(key, smi.encode('ascii'))
-                txn_id.put(key, smi.encode('ascii'))
+                txn_id.put(key, id.encode('ascii'))
                 idx += 1
                 if idx == 100000: break
         else:
@@ -39,7 +39,7 @@ for path in sorted(glob("raw/ZINC20-2D/*/*.smi")):
                 smi, id = line[:-1].split(' ')
                 key = idx.to_bytes(blen)
                 txn_smi.put(key, smi.encode('ascii'))
-                txn_id.put(key, smi.encode('ascii'))
+                txn_id.put(key, id.encode('ascii'))
                 idx += 1  
     logger.info(f"Finished {path}, {idx=:>10}")
     assert idx <= size
