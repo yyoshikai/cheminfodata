@@ -1,0 +1,6 @@
+*
+!.gitignore
+!/zinc/
+!/zinc/251030/
+!/zinc/251030/ZINC20-2D/
+!/zinc/251030/ZINC20-2D/*.py
