@@ -1,32 +1,26 @@
 import sys, os
-from glob import glob
+import pickle
 from argparse import ArgumentParser
+from collections import defaultdict
 import rdkit
 from rdkit import Chem
+from rdkit.Chem.Scaffolds import MurckoScaffold
 WORKDIR = os.environ.get('WORKDIR', "/workspace")
 sys.path.append(f"{WORKDIR}/cplm")
-from src.utils.lmdb import new_lmdb
+from src.utils.lmdb import load_lmdb
 from src.data.lmdb import data_len_to_blen
 from src.utils.logger import get_logger, add_file_handler
 
-parser = ArgumentParser()
-parser.add_argument('--rank', type=int, default=0)
-parser.add_argument('--size', type=int, default=0)
-args = parser.parse_args()
 
-logger = get_logger(stream=True)
-add_file_handler(logger, "raw/filter_get_scaf.log")
-logger.info(f"{rdkit.__version__=}")
-
-# From MolecularSets
-def get_mol(smiles_or_mol):
+# cf. MolecularSets
+def get_mol(smiles):
     '''
     Loads SMILES/molecule into RDKit's object
     '''
-    if isinstance(smiles_or_mol, str):
-        if len(smiles_or_mol) == 0:
+    if isinstance(smiles, str):
+        if len(smiles) == 0:
             return None
-        mol = Chem.MolFromSmiles(smiles_or_mol)
+        mol = Chem.MolFromSmiles(smiles)
         if mol is None:
             return None
         try:
@@ -34,7 +28,7 @@ def get_mol(smiles_or_mol):
         except ValueError:
             return None
         return mol
-    return smiles_or_mol
+    return smiles
 
 def mol_passes_filters(mol,
                        allowed=None,
@@ -97,7 +91,6 @@ def process_molecule(mol_row, isomeric):
                               isomericSmiles=isomeric)
     return _id, smiles
 
-
 def filter_lines(lines, n_jobs, isomeric):
     logger.info('Filtering SMILES')
     with Pool(n_jobs) as pool:
@@ -121,3 +114,66 @@ def filter_lines(lines, n_jobs, isomeric):
             compute_scaffold, dataset['SMILES'].values
         )
     return dataset
+
+parser = ArgumentParser()
+parser.add_argument('--rank', type=int, required=True)
+parser.add_argument('--size', type=int, required=True)
+args = parser.parse_args()
+
+logger = get_logger(stream=True)
+os.makedirs("raw/filter_get_scaf", exist_ok=True)
+add_file_handler(logger, f"raw/filter_get_scaf/{args.rank}.log")
+logger.info(f"{rdkit.__version__=}")
+logger.info(f"{args=}")
+
+env, txn = load_lmdb("smi.lmdb")
+
+# get start & end
+size = env.stat()['entries']
+blen = data_len_to_blen(size)
+idx_start = int((size*args.rank)/args.size)
+idx_max = int((size*(args.rank+1))/args.size)-1
+key_start = idx_start.to_bytes(blen)
+key_max = idx_max.to_bytes(blen)
+logger.info(f"{size=}, {key_start=}, {key_max=}")
+
+cursor = txn.cursor()
+cursor.set_key(key_start)
+def get_mol(smiles):
+    if len(smiles) == 0:
+        return None
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return None
+    try:
+        Chem.SanitizeMol(mol)
+    except ValueError:
+        return None
+    return mol
+
+scaf2idxs = defaultdict(list)
+for i, (key, value) in enumerate(cursor.iternext(), 1):
+    idx = int.from_bytes(key)
+    smi = value.decode('ascii')
+    
+    # process_molecule
+
+    ## mol_pass_filters
+    mol = get_mol(smi)
+    if mol is None: continue
+    smiles = Chem.MolToSmiles(mol, isomericSmiles=False)
+    if smiles is None or len(smiles) == 0: continue
+    if Chem.MolFromSmiles(smiles) is None: continue
+    ## - mol_pass_filters
+    smi = Chem.MolToSmiles(Chem.MolFromSmiles(smi), isomericSmiles=False)
+    # - process_molecule
+
+    scaf = compute_scaffold(smi)
+
+    scaf2idxs[scaf].append(idx)
+
+    if i % 100000 == 0:
+        logger.info(f"Finished {i}")
+    if key == key_max: break
+with open(f"raw/filter_get_scaf/{args.rank}.pkl", 'wb') as f:
+    pickle.dump(dict(scaf2idxs), f)
