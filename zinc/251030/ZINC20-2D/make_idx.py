@@ -1,12 +1,9 @@
 import sys, os
 import pickle
-from psutil import virtual_memory
-import numpy as np
-from argparse import ArgumentParser
 WORKDIR = os.environ.get('WORKDIR', "/workspace")
 sys.path.append(f"{WORKDIR}/cplm")
 from src.utils.logger import get_logger, add_file_handler
-from src.utils.lmdb import load_lmdb, new_lmdb
+from src.utils.lmdb import new_lmdb
 from src.data.lmdb import data_len_to_blen
 
 
