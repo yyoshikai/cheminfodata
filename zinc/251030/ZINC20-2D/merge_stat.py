@@ -37,6 +37,18 @@ for split in ['test', 'test_scaffolds']:
         'sigma': np.cov(fcd_predictions.T)
     }
 
+    # SNN
+    os.makedirs(f"stat/{split}_fps", exist_ok=True)
+    logger.info(f'[SNN] started. {get_mem()}')
+    for i, rank in enumerate(range(args.size), 1):
+        fps = np.load(f"raw/compute_stat/{split}/{rank}/fps.npy")
+        fps = np.packbits(fps, axis=1)
+        np.save(f"stat/{split}_fps/{rank}.npy", fps)
+        if i % 50 == 0:
+            logger.info(f'[SNN] loaded {i} {get_mem()}')
+    fps = np.concatenate(fps, axis=0)
+    stat['SNN'] = {'fps': fps}
+
     # Frag
     logger.info(f'[Frag] started. {get_mem()}')
     counter = Counter()
