@@ -9,7 +9,8 @@ WORKDIR = os.environ.get('WORKDIR', "/workspace")
 sys.path.append(f"{WORKDIR}/cplm")
 from src.utils.lmdb import load_lmdb
 from src.data.lmdb import data_len_to_blen
-from src.utils.logger import get_logger, add_file_handler
+from src.utils.logger import get_logger, add_file_handler, log_git_hash
+
 
 
 # cf. MolecularSets
@@ -125,6 +126,7 @@ os.makedirs("raw/filter_get_scaf", exist_ok=True)
 add_file_handler(logger, f"raw/filter_get_scaf/{args.rank}.log")
 logger.info(f"{rdkit.__version__=}")
 logger.info(f"{args=}")
+logger.info(f"git hash={log_git_hash()}")
 
 env, txn = load_lmdb("smi.lmdb")
 

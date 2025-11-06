@@ -5,7 +5,7 @@ import numpy as np
 from argparse import ArgumentParser
 WORKDIR = os.environ.get('WORKDIR', "/workspace")
 sys.path.append(f"{WORKDIR}/cplm")
-from src.utils.logger import get_logger, add_file_handler
+from src.utils.logger import get_logger, add_file_handler, log_git_hash
 
 parser = ArgumentParser()
 parser.add_argument('--size', type=int, required=True)
@@ -14,6 +14,7 @@ args = parser.parse_args()
 logger = get_logger(stream=True)
 add_file_handler(logger, f"raw/merge_split.log")
 logger.info(f"{args=}")
+log_git_hash(logger)
 
 def log_mem():
     mem = virtual_memory()

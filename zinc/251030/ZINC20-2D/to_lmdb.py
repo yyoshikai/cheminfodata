@@ -6,7 +6,7 @@ WORKDIR = os.environ.get('WORKDIR', "/workspace")
 sys.path.append(f"{WORKDIR}/cplm")
 from src.utils.lmdb import new_lmdb
 from src.data.lmdb import data_len_to_blen
-from src.utils.logger import get_logger, add_file_handler
+from src.utils.logger import get_logger, add_file_handler, log_git_hash
 
 parser = ArgumentParser()
 parser.add_argument('--test', action='store_true')
@@ -16,6 +16,7 @@ logger = get_logger(stream=True)
 add_file_handler(logger, "raw/to_lmdb.log")
 logger.info(f"{rdkit.__version__=}")
 logger.info(f"{args.test=}")
+log_git_hash(logger)
 
 env_smi, txn_smi = new_lmdb("smi.lmdb", map_size=int(100e10))
 env_id, txn_id = new_lmdb("id.lmdb", map_size=int(100e10))

@@ -5,7 +5,7 @@ from collections import defaultdict
 import rdkit
 WORKDIR = os.environ.get('WORKDIR', "/workspace")
 sys.path.append(f"{WORKDIR}/cplm")
-from src.utils.logger import get_logger, add_file_handler
+from src.utils.logger import get_logger, add_file_handler, log_git_hash
 
 parser = ArgumentParser()
 parser.add_argument('--size', type=int, required=True)
@@ -15,6 +15,7 @@ logger = get_logger(stream=True)
 add_file_handler(logger, f"raw/split_scaf.log")
 logger.info(f"{rdkit.__version__=}")
 logger.info(f"{args=}")
+log_git_hash(logger)
 
 scaf2sizes = defaultdict(int)
 for rank in range(args.size):
