@@ -9,6 +9,7 @@ from src.utils.logger import get_logger, add_file_handler, log_git_hash
 
 parser = ArgumentParser()
 parser.add_argument('--size', type=int, required=True)
+parser.add_argument('--sample-size', type=int, required=True)
 args = parser.parse_args()
 os.makedirs("stat", exist_ok=True)
 
@@ -21,7 +22,7 @@ for split in ['test', 'test_scaffolds']:
 
     # FCD
     fcd_predictions = []
-    for rank in range(args.size):
+    for rank in range(args.sample_size):
         fcd_predictions.append(np.load(f"raw/compute_stat_sample/{split}/{rank}/fcd_predictions.npy"))
     fcd_predictions = np.concatenate(fcd_predictions, axis=0)
     stat['FCD'] = {
@@ -55,7 +56,7 @@ for split in ['test', 'test_scaffolds']:
     # wassertain
     for name in ['logP', 'SA', 'QED', 'weight']:
         value = []
-        for rank in range(args.size):
+        for rank in range(args.sample_size):
             with open(f"raw/compute_stat_sample/{split}/{rank}/{name}.pkl", 'rb') as f:
                 value += pickle.load(f)
         stat[name] = {'values': value}
