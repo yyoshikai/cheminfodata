@@ -45,5 +45,6 @@ for i, (key, value) in enumerate(cursor.iternext(), 1):
     txn_w.put(key, value)
     if i % 10000 == 0:
         logger.info(f"{i} finished.")
+    if key == key_max: break
 txn_w.commit()
 env_w.close()
