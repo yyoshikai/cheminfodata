@@ -47,7 +47,7 @@ for i, (key, value) in enumerate(txn.cursor().iternext(), 1):
         else:
             with gzip.open(lig_path+'.gz') as f:
                 mol_supplier = list(Chem.ForwardSDMolSupplier(f))
-    data['lig_mol'] = mol_supplier[sdf_idxs[idx]]
+    data['lig_mol'] = mol_supplier[int(sdf_idxs[idx])]
     data['dname'] = dname
     data['lig_name'] = lname
     data['protein_name'] = pnames[idx]
